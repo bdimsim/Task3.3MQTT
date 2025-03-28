@@ -74,7 +74,7 @@ void handleConnections() {
   connectMQTT();
 }
 
-// Callback handles actions based on what message was received
+// Callback handles actions based on what message/topic was received
 // Payload is a raw byte array of unsigned chars
 void callback(char *topic, uint8_t *payload, unsigned int length) {
   payload[length] = '\0';  // Adds null terminator to end
