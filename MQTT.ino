@@ -2,12 +2,6 @@
 #include <PubSubClient.h>
 #include "Secrets.h"
 
-const uint8_t echoPin = 7;
-const uint8_t trigPin = 6;
-const uint8_t ledPin = 5;
-
-const int DISTANCE_THRESHOLD = 15;
-
 char ssid[] = SECRET_SSID;
 char pass[] = SECRET_PASS;
 
@@ -16,6 +10,16 @@ const int port = 1883;
 const char *waveTopic = "SIT210/wave";
 const char *patTopic = "SIT210/pat";
 char name[] = "Brandon";
+
+const uint8_t echoPin = 7;
+const uint8_t trigPin = 6;
+const uint8_t ledPin = 5;
+
+const int WAVE_DISTANCE_THRESHOLD = 10;
+const int PAT_DISTANCE_THRESHOLD = 20;
+
+long duration_us = 0;
+long distance_cm = 0;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -31,7 +35,10 @@ void setup() {
 
 void loop() {
   handleConnections();
-  if (detectWave()) client.publish(waveTopic, name);
+  if (detectWavePat()) {
+    if (distance_cm <= WAVE_DISTANCE_THRESHOLD) client.publish(waveTopic, name);
+    else client.publish(patTopic, name);
+  }
   client.loop();
 }
 
@@ -64,7 +71,7 @@ void handleConnections() {
   connectMQTT();
 }
 
-// Callback handles actions based on what message/topic was received
+// Callback handles actions based on what message was received
 // Payload is a raw byte array of unsigned chars
 void callback(char *topic, uint8_t *payload, unsigned int length) {
   payload[length] = '\0';  // Adds null terminator to end
@@ -81,9 +88,9 @@ void callback(char *topic, uint8_t *payload, unsigned int length) {
   else if (String(topic) == "SIT210/pat") blinkLED(5);
 }
 
-bool detectWave() {
+bool detectWavePat() {
   static unsigned long lastReadTime = 0;
-  if (millis() - lastReadTime < 200) return false;
+  if (millis() - lastReadTime < 500) return false;
 
   digitalWrite(trigPin, HIGH);
   delayMicroseconds(10);
@@ -91,9 +98,9 @@ bool detectWave() {
 
   lastReadTime = millis();
 
-  long duration_us = pulseIn(echoPin, HIGH);
-  long distance_cm = 0.01715 * duration_us;
-  return distance_cm <= DISTANCE_THRESHOLD;
+  duration_us = pulseIn(echoPin, HIGH);
+  distance_cm = 0.01715 * duration_us;
+  return distance_cm > 0 && distance_cm <= PAT_DISTANCE_THRESHOLD;
 }
 
 void blinkLED(int blinks) {
