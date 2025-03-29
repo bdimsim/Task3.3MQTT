@@ -13,16 +13,12 @@ char pass[] = SECRET_PASS;
 
 char server[] = "broker.emqx.io";
 const int port = 1883;
-
 const char *waveTopic = "SIT210/wave";
 const char *patTopic = "SIT210/pat";
 char name[] = "Brandon";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
-
-long duration_us = 0;
-long distance_cm = 0;
 
 void setup() {
   pinMode(ledPin, OUTPUT);
@@ -35,14 +31,8 @@ void setup() {
 
 void loop() {
   handleConnections();
-
   if (detectWave()) client.publish(waveTopic, name);
-
   client.loop();
-
-  // Serial.print("Distance: ");
-  // Serial.print(distance_cm);
-  // Serial.println(" cm");
 }
 
 void connectWiFi() {
@@ -93,10 +83,7 @@ void callback(char *topic, uint8_t *payload, unsigned int length) {
 
 bool detectWave() {
   static unsigned long lastReadTime = 0;
-
-  if (millis() - lastReadTime < 200) {
-    return false;
-  }
+  if (millis() - lastReadTime < 200) return false;
 
   digitalWrite(trigPin, HIGH);
   delayMicroseconds(10);
